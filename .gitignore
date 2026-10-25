@@ -1,0 +1,4 @@
+# ループ実行時の一時ファイル
+loop/.active
+loop/.iterations
+loop/.last-verify.log

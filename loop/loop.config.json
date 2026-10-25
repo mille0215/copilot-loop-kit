@@ -1,0 +1,5 @@
+{
+  "verify": "npm test",
+  "maxIterations": 8,
+  "verifyTimeoutSec": 240
+}
