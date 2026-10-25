@@ -1,4 +1,2 @@
-# ループ実行時の一時ファイル
-loop/.active
-loop/.iterations
-loop/.last-verify.log
+# ループ実行時の一時ファイル（状態・カウンタ・verify ログ・レビュー用差分）
+loop/.run/

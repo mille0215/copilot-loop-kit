@@ -10,7 +10,7 @@
 
 ## 制約
 - 触ってよい範囲: <!-- 例: src/employees/, tests/employees/ -->
-- 触ってはいけない範囲: `.github/hooks/`, `scripts/hooks/`, `loop/loop.config.json`, `loop/GOAL.md`
+- 触ってはいけない範囲: ループの仕組み一式（フックが強制する。一覧は README の「保護されるファイル」）<!-- 追加で守りたいものは loop.config.json の protectedPaths へ -->
 - 新しい依存パッケージの追加: 禁止（必要なら STATE.md の「人間への質問」に書いて止まる）
 
 ## 参考
