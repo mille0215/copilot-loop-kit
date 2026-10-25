@@ -32,7 +32,8 @@ const DEFAULT_CONFIG = {
 // 解析できない入力は空オブジェクトとして扱う（＝ガードは素通しになる）。
 export function readHookInput() {
   let input = {};
-  try { input = JSON.parse(readFileSync(0, "utf8") || "{}"); } catch {}
+  // PowerShell 5.1 などは先頭に BOM を付けて渡すので取り除く
+  try { input = JSON.parse(readFileSync(0, "utf8").replace(/^﻿/, "") || "{}"); } catch {}
   const cwd = input.cwd ?? input.workspaceFolder;
   if (typeof cwd === "string" && existsSync(cwd)) process.chdir(cwd);
   return input;

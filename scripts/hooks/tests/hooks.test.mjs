@@ -128,6 +128,14 @@ test("通常ファイルの編集は、本文に保護パスが書かれてい�
   assert.ok(!denied(edit("editFiles", { files: ["src/a.js"] })));
 });
 
+test("BOM 付きの入力も解析する", () => {
+  const r = spawnSync("node", [file("scripts/hooks/pre-tool-guard.mjs")], {
+    input: "﻿" + JSON.stringify({ cwd: dir, tool_name: "create_file", tool_input: { filePath: "loop/GOAL.md" } }),
+    encoding: "utf8",
+  });
+  assert.ok(denied(JSON.parse(r.stdout)));
+});
+
 test("ループ中はツール呼び出し回数の上限を超えると拒否する", () => {
   setup({ maxToolCalls: 2 });
   activate();
