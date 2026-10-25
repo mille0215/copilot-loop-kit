@@ -38,7 +38,25 @@ const DANGEROUS = [
   /--no-verify\b/i,
   /\bnpm\s+pkg\s+(set|delete)\b/i,
   /\b(npm|pnpm|yarn)\s+(install|i|add)\b(\s+-\S+)*\s+[^-\s]/i,
+  /\b(uv|poetry|pdm|rye|hatch)\s+add\b/i,
+  /\bpipenv\s+install\b(\s+-\S+)*\s+[^-\s]/i,
+  /\b(conda|mamba|micromamba)\s+install\b/i,
 ];
+
+// pip でパッケージを名指しで入れるのは拒否する。
+// 宣言済みの依存を入れるだけの `-r requirements.txt` / `-e .` / `.` は許可する。
+const PIP_INSTALL = /(?:^|[\s;&|])(?:\S*[\\/])?(?:pip[\d.]*|(?:python[\d.]*|py)(?:\.exe)?\s+-m\s+pip|uv\s+pip)(?:\.exe)?\s+install\b([^;&|]*)/gi;
+const PIP_VALUE_FLAGS = new Set(["-r", "--requirement", "-e", "--editable", "-c", "--constraint"]);
+function pipAddsPackage(command) {
+  for (const [, rest] of command.matchAll(PIP_INSTALL)) {
+    const tokens = rest.trim().split(/\s+/).filter(Boolean);
+    for (let i = 0; i < tokens.length; i++) {
+      if (PIP_VALUE_FLAGS.has(tokens[i].toLowerCase())) i++;
+      else if (!tokens[i].startsWith("-") && tokens[i] !== ".") return true;
+    }
+  }
+  return false;
+}
 
 // ループ用スクリプトの呼び出しだけは、保護パスを含んでいても許可する
 const LOOP_COMMAND = /^node\s+scripts[\\/]loop[\\/](start|checkpoint|snapshot)\.mjs(\s+[^;&|<>`$]*)?$/i;
@@ -49,6 +67,14 @@ const READONLY_COMMANDS = new Set([
   "get-childitem", "gci", "grep", "rg", "findstr", "select-string", "sls", "wc",
 ]);
 const READONLY_GIT = new Set(["diff", "log", "show", "status", "blame", "ls-files"]);
+// テストの実行も、保護されたテストファイルや設定を指定してよい
+const TEST_RUNNERS = [
+  /^(\S*[\\/])?(pytest|py\.test|jest|vitest|mocha)(\.exe|\.cmd)?(\s|$)/i,
+  /^(\S*[\\/])?(python[\d.]*|py)(\.exe)?\s+-m\s+(pytest|unittest)(\s|$)/i,
+  /^node\s+--test(\s|$)/i,
+  /^(npm|pnpm|yarn)\s+(test|t)(\s|$)/i,
+  /^npx\s+(jest|vitest|mocha)(\s|$)/i,
+];
 
 const input = readHookInput();
 const { config } = loadConfig();
@@ -99,6 +125,7 @@ function collectPaths(value, key = "", out = []) {
 function isReadOnlyCommand(cmd) {
   if (/[;&<>`]|\$\(|--output/.test(cmd)) return false;
   return cmd.split("|").every((segment) => {
+    if (TEST_RUNNERS.some((re) => re.test(segment.trim()))) return true;
     const [head, sub] = segment.trim().split(/\s+/).map((t) => t.toLowerCase());
     if (head === "git") return READONLY_GIT.has(sub);
     return READONLY_COMMANDS.has(head);
@@ -119,7 +146,7 @@ if (active) {
 if (isShell) {
   const command = String(toolInput.command ?? toolInput.cmd ?? toolInput.script ?? JSON.stringify(toolInput)).trim();
   if (!LOOP_COMMAND.test(command)) {
-    if (DANGEROUS.some((re) => re.test(command))) {
+    if (DANGEROUS.some((re) => re.test(command)) || pipAddsPackage(command)) {
       deny("ループ実行中は危険な操作が禁止されています（push / 強制削除 / 履歴の破棄 / 依存追加 / DROP 等）。必要なら STATE.md の「人間への質問」に書いてください。");
     }
     if (protectedCommandRes.some((re) => re.test(command)) && !isReadOnlyCommand(command)) {

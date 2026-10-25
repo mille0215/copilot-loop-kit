@@ -42,7 +42,7 @@
 
 ## 導入手順
 
-1. このリポジトリの中身を対象リポジトリのルートにコピーする（`.github` `.vscode` `loop` `scripts` `.gitignore`）。既存の `.vscode/settings.json` や `.gitignore` がある場合は中身をマージする。
+1. このリポジトリの中身を対象リポジトリのルートにコピーする（`.github` `.vscode` `loop` `scripts` `.gitignore`）。既存の `.vscode/settings.json` や `.gitignore` がある場合は中身をマージする。Python のプロジェクトなら、続けて「[Python で使う場合](#python-で使う場合)」の手順も行う。
 2. Node.js 22 以上が入っていることを確認する（フックとスクリプトが `node` で動くため）。
 3. `loop/loop.config.json` を調整する。
    - `verify` をプロジェクトの検証コマンドに変える。例: `"npm run lint && npm test"`、`"dotnet test"`、`"pytest -q"`
@@ -52,6 +52,21 @@
 5. VS Code でワークスペースを「信頼」する（信頼されていないとフックは動かない）。
 6. チャットの右クリック → **Diagnostics** で、エージェント・プロンプト・フックが読み込まれているか確認する。
 7. 動作確認として `node --test "scripts/hooks/tests/*.test.mjs"` を実行する。
+
+## Python で使う場合
+
+ループの仕組みは言語に依存しません。`presets/python/` に設定例があります。フックは Node.js で動くので、Python のプロジェクトでも Node.js 22 以上が必要です。
+
+1. `presets/python/loop.config.json` で `loop/loop.config.json` を置き換える。
+   - verify は `ruff check` と `pytest` を仮想環境（`.venv`）の python で実行します。**フックは仮想環境を有効化せずに verify を実行する**ので、`pytest` ではなく `.venv\Scripts\python -m pytest` のようにパスで指定してください。macOS / Linux では `.venv/bin/python` にします。
+   - `protectedPaths` に `pyproject.toml`・`requirements*.txt`・lock ファイル・`tests/**` などが入っています。`pyproject.toml` には pytest の設定と依存の一覧があるため、保護しないと「テストを対象から外す」「依存を足す」ことで検証を通せてしまいます。
+2. `presets/python/settings.json` の `chat.tools.terminal.autoApprove` を `.vscode/settings.json` にマージする。
+3. `presets/python/gitignore` の内容を `.gitignore` に追記する（`__pycache__` やキャッシュを無視しないと、レビューのやり直しを求められ続けます）。
+4. ruff・pytest など verify に必要な道具は、**ループを始める前に人間が仮想環境に入れておく**。ループ中は依存を追加できません。
+
+ガードが拒否する依存追加: `pip install <パッケージ>`（`python -m pip`・`uv pip` も含む）、`uv add`・`poetry add`・`pdm add`・`pipenv install <パッケージ>`・`conda install`。宣言済みの依存を入れるだけの `pip install -r requirements.txt`・`pip install -e .`・`uv sync`・`poetry install` は許可されます。
+
+完了条件は pytest で判定できる形にします。Web API（FastAPI / Flask）は `TestClient` で、CLI は `subprocess` で実行して出力と終了コードを確かめます。GUI はロジックを別モジュールに分け、そのテストを完了条件にしてください。
 
 ## 使い方
 
@@ -78,7 +93,7 @@ VS Code が落ちた場合などに `loop/.run/active.json` が残ることが�
 - `loop/loop.config.json`・`loop/GOAL.md`・`loop/STATE.template.md`・`loop/.run/`
 - `loop/loop.config.json` の `protectedPaths` に挙げたもの
 
-保護ファイルを読むだけのシェルコマンド（`cat`・`Get-Content`・`git diff` など）は許可されます。
+保護ファイルを読むだけのシェルコマンド（`cat`・`Get-Content`・`git diff` など）と、テストの実行（`pytest`・`python -m pytest`・`node --test`・`npm test` など）は、保護ファイルを指定していても許可されます。
 
 ## 設定項目（`loop/loop.config.json`）
 

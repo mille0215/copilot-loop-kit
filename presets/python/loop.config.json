@@ -1,0 +1,27 @@
+{
+  "verify": ".venv\\Scripts\\python -m ruff check . && .venv\\Scripts\\python -m pytest -q",
+  "maxIterations": 8,
+  "maxToolCalls": 200,
+  "verifyTimeoutSec": 240,
+  "staleHours": 12,
+  "requireReview": true,
+  "checkpointCommits": true,
+  "protectedPaths": [
+    "pyproject.toml",
+    "setup.cfg",
+    "setup.py",
+    "pytest.ini",
+    "tox.ini",
+    "noxfile.py",
+    ".coveragerc",
+    "ruff.toml",
+    ".ruff.toml",
+    "mypy.ini",
+    "requirements*.txt",
+    "poetry.lock",
+    "uv.lock",
+    "Pipfile",
+    "Pipfile.lock",
+    "tests/**"
+  ]
+}

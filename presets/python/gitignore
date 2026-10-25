@@ -1,0 +1,14 @@
+# .gitignore に追記する（Python 用）
+# 生成物を無視しておかないと、verify のたびにレビュー用の差分が変わってしまう
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+*.egg-info/
+build/
+dist/

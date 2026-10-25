@@ -1,0 +1,16 @@
+{
+  // .vscode/settings.json の "chat.tools.terminal.autoApprove" にマージする（Python 用）
+  "chat.tools.terminal.autoApprove": {
+    // 仮想環境の python で pytest / ruff / mypy を動かすコマンドを自動承認する（Windows・macOS・Linux 共通）
+    "/^\\.venv[\\\\/](Scripts|bin)[\\\\/]python(\\.exe)?\\s+-m\\s+(pytest|ruff|mypy)\\b/": true,
+    "node scripts/loop/start.mjs": true,
+    "node scripts/loop/checkpoint.mjs": true,
+    "node scripts/loop/snapshot.mjs": true,
+    "git status": true,
+    "git diff": true,
+    "/^git\\s+push/": false,
+    "/\\bpip\\s+install\\b/": false,
+    "rm": false,
+    "Remove-Item": false
+  }
+}

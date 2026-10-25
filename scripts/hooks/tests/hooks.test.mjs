@@ -89,6 +89,60 @@ test("通常のシェルコマンドは許可する", () => {
   }
 });
 
+test("Python の依存追加を拒否する", () => {
+  for (const cmd of [
+    "pip install requests",
+    "pip3 install -U requests",
+    "python -m pip install requests",
+    ".venv\\Scripts\\python -m pip install requests",
+    ".venv/bin/pip install requests",
+    "uv pip install requests",
+    "pip install -r requirements.txt requests",
+    "npm test && pip install requests",
+    "uv add requests",
+    "poetry add requests",
+    "pipenv install requests",
+    "conda install numpy",
+  ]) {
+    assert.ok(denied(shell(cmd)), cmd);
+  }
+});
+
+test("宣言済みの依存を入れるだけの Python コマンドは許可する", () => {
+  for (const cmd of [
+    "pip install -r requirements.txt",
+    "python -m pip install -e .",
+    "pip install .",
+    "uv sync",
+    "poetry install",
+    "pipenv install",
+    "pip list",
+  ]) {
+    assert.ok(!denied(shell(cmd)), cmd);
+  }
+});
+
+test("保護されたテストや設定を指定したテスト実行は許可する", () => {
+  for (const cmd of [
+    'node --test "scripts/hooks/tests/*.test.mjs"',
+    ".venv\\Scripts\\python -m pytest -c pytest.ini -q",
+    "pytest tox.ini",
+    "npx vitest run --config vitest.config.ts",
+  ]) {
+    assert.ok(!denied(shell(cmd)), cmd);
+  }
+  assert.ok(denied(shell("pytest -q > loop/.run/iterations")));
+});
+
+test("Python プリセットは pyproject.toml と tests/ を保護する", () => {
+  const preset = JSON.parse(readFileSync(path.join(KIT, "presets/python/loop.config.json"), "utf8"));
+  setup({ verify: preset.verify, protectedPaths: preset.protectedPaths });
+  for (const p of ["pyproject.toml", "tests/test_app.py", "tests/conftest.py", "requirements-dev.txt", "uv.lock"]) {
+    assert.ok(denied(edit("replace_string_in_file", { filePath: p, oldString: "a", newString: "b" })), p);
+  }
+  assert.ok(!denied(edit("replace_string_in_file", { filePath: "src/app/main.py", oldString: "a", newString: "b" })));
+});
+
 test("保護ファイルを読むだけのシェルコマンドは許可し、書き換えは拒否する", () => {
   assert.ok(!denied(shell("cat loop/GOAL.md")));
   assert.ok(!denied(shell("git diff loop/GOAL.md")));
